@@ -1,11 +1,11 @@
 // src/components/AnimatedBackground.tsx
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 type IconKind = "camera" | "clapper" | "reel" | "tape" | "play";
 
 type Particle = {
-  x: number;
-  y: number;
+  x: number; // 0..1
+  y: number; // 0..1
   s: number;
   a: number;
   vx: number;
@@ -15,48 +15,52 @@ type Particle = {
   tw: number;
   sp: number;
   kind: IconKind;
-
+  born: number;
+  life: number;
   bobAmp: number;
   bobSp: number;
   bobPh: number;
-
-  born: number;
-  life: number;
 };
 
 export default function AnimatedBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>(0);
 
+  // offscreen prerendered icon sprites
+  const spriteRef = useRef<Record<IconKind, HTMLCanvasElement | null>>({
+    camera: null,
+    clapper: null,
+    reel: null,
+    tape: null,
+    play: null,
+  });
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
 
-    /* 🔥 SPEED + DENSITY CONTROLS */
-    const TIME_SPEED = 2.2;
-    const BASE_COUNT = 150;
-    const MIN_COUNT = 150;
-    const BURST_EVERY = 0.45;
-    const BURST_SIZE = 12;
+    /* ✅ PERF KNOBS */
+    const TARGET_FPS = 45;
+    const FRAME_MS = 1000 / TARGET_FPS;
 
-    const resize = () => {
-      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-      canvas.width = Math.floor(window.innerWidth * dpr);
-      canvas.height = Math.floor(window.innerHeight * dpr);
-      canvas.style.width = `${window.innerWidth}px`;
-      canvas.style.height = `${window.innerHeight}px`;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    };
+    const DPR_CAP = 1.5; // huge perf win on retina
+    const TIME_SPEED = 1.7; // keep motion fast but not insane
 
-    resize();
-    window.addEventListener("resize", resize);
+    const BASE_COUNT = 90;
+    const MIN_COUNT = 90;
+
+    const BURST_EVERY = 0.8; // less frequent
+    const BURST_SIZE = 6;
+
+    // spotlights count/strength trimmed
+    const ENABLE_SHADOWS = false; // turn on only if you really want glow
 
     const rand = (min: number, max: number) => min + Math.random() * (max - min);
     const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
@@ -64,7 +68,22 @@ export default function AnimatedBackground() {
 
     const kinds: IconKind[] = ["camera", "clapper", "reel", "tape", "play"];
 
-    /* ───────────────────────── Lights ───────────────────────── */
+    const resize = () => {
+      const dpr = Math.max(1, Math.min(DPR_CAP, window.devicePixelRatio || 1));
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+
+    resize();
+    window.addEventListener("resize", resize);
+
+    /* ───────────────────────── Spotlights ───────────────────────── */
 
     const drawRadial = (
       cx: number,
@@ -90,113 +109,133 @@ export default function AnimatedBackground() {
         Math.max(w, h) * 0.75
       );
       g.addColorStop(0, "rgba(0,0,0,0)");
-      g.addColorStop(0.65, "rgba(0,0,0,0.25)");
-      g.addColorStop(1, "rgba(0,0,0,0.72)");
+      g.addColorStop(0.65, "rgba(0,0,0,0.22)");
+      g.addColorStop(1, "rgba(0,0,0,0.62)");
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, w, h);
     };
 
-    const drawProjectorBeam = (w: number, h: number, t: number) => {
-      const beamX = w * 0.5 + Math.sin(t * 0.6) * w * 0.16;
-      const grad = ctx.createLinearGradient(beamX, 0, beamX, h * 0.8);
-
-      grad.addColorStop(0, "rgba(212,168,83,0.06)");
-      grad.addColorStop(0.3, "rgba(212,168,83,0.02)");
-      grad.addColorStop(1, "rgba(212,168,83,0)");
-
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.moveTo(beamX - w * 0.02, 0);
-      ctx.lineTo(beamX - w * 0.28, h * 0.8);
-      ctx.lineTo(beamX + w * 0.28, h * 0.8);
-      ctx.lineTo(beamX + w * 0.02, 0);
-      ctx.closePath();
-      ctx.fill();
-    };
-
-    /* 🔥 SIX SPOTLIGHTS TOTAL */
+    // 4 spotlights only (still looks good)
     const drawSpotlights = (w: number, h: number, t: number) => {
-      // 1. top-left gold
       drawRadial(
-        w * 0.18 + Math.sin(t * 0.9) * w * 0.1,
-        h * 0.18 + Math.cos(t * 0.7) * h * 0.06,
-        h * 0.6,
-        "rgba(212,168,83,0.032)",
-        "rgba(212,168,83,0)"
-      );
-
-      // 2. top-right blue
-      drawRadial(
-        w * 0.84 + Math.cos(t * 0.8) * w * 0.08,
-        h * 0.28 + Math.sin(t * 0.65) * h * 0.07,
-        h * 0.56,
-        "rgba(123,159,212,0.022)",
-        "rgba(123,159,212,0)"
-      );
-
-      // 3. bottom amber
-      drawRadial(
-        w * 0.52 + Math.sin(t * 0.55) * w * 0.12,
-        h * 0.92,
-        h * 0.48,
-        "rgba(200,149,108,0.022)",
-        "rgba(200,149,108,0)"
-      );
-
-      // 4. sweeping set light
-      drawRadial(
-        w * 0.5 + Math.sin(t * 0.7) * w * 0.34,
-        h * 0.1,
-        h * 0.66,
+        w * 0.18 + Math.sin(t * 0.8) * w * 0.08,
+        h * 0.18 + Math.cos(t * 0.6) * h * 0.05,
+        h * 0.58,
         "rgba(212,168,83,0.020)",
         "rgba(212,168,83,0)"
       );
 
-      // 5. 🔥 NEW: mid-left cool fill
       drawRadial(
-        w * 0.12 + Math.sin(t * 0.95) * w * 0.06,
-        h * 0.55 + Math.cos(t * 0.85) * h * 0.08,
-        h * 0.50,
-        "rgba(123,159,212,0.016)",
+        w * 0.84 + Math.cos(t * 0.7) * w * 0.07,
+        h * 0.30 + Math.sin(t * 0.55) * h * 0.06,
+        h * 0.54,
+        "rgba(123,159,212,0.014)",
         "rgba(123,159,212,0)"
       );
 
-      // 6. 🔥 NEW: right-low warm kicker
       drawRadial(
-        w * 0.88 + Math.cos(t * 0.75) * w * 0.05,
-        h * 0.72 + Math.sin(t * 0.9) * h * 0.05,
-        h * 0.42,
-        "rgba(212,168,83,0.018)",
+        w * 0.52 + Math.sin(t * 0.45) * w * 0.10,
+        h * 0.92,
+        h * 0.44,
+        "rgba(200,149,108,0.012)",
+        "rgba(200,149,108,0)"
+      );
+
+      const sweepX = w * 0.5 + Math.sin(t * 0.55) * w * 0.28;
+      drawRadial(
+        sweepX,
+        h * 0.10,
+        h * 0.62,
+        "rgba(212,168,83,0.012)",
         "rgba(212,168,83,0)"
       );
     };
 
-    /* ───────────────────────── Icons ───────────────────────── */
+    const drawProjectorBeam = (w: number, h: number, t: number) => {
+      const beamX = w * 0.5 + Math.sin(t * 0.55) * w * 0.12;
+      const grad = ctx.createLinearGradient(beamX, 0, beamX, h * 0.8);
 
-    const stroke = (a: number) => `rgba(212,168,83,${a})`;
+      grad.addColorStop(0, "rgba(212,168,83,0.030)");
+      grad.addColorStop(0.35, "rgba(212,168,83,0.012)");
+      grad.addColorStop(1, "rgba(212,168,83,0)");
 
-    const withIconStyle = (a: number) => {
-      ctx.strokeStyle = stroke(a);
-      ctx.lineWidth = 1.6;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.shadowColor = stroke(a);
-      ctx.shadowBlur = 14;
-    };
-
-    const drawIcon = (kind: IconKind, size: number) => {
+      ctx.fillStyle = grad;
       ctx.beginPath();
-      if (kind === "play") {
-        const s = size * 0.7;
-        ctx.moveTo(-s * 0.25, -s * 0.45);
-        ctx.lineTo(s * 0.55, 0);
-        ctx.lineTo(-s * 0.25, s * 0.45);
-        ctx.closePath();
-      } else {
-        ctx.arc(0, 0, size * 0.4, 0, Math.PI * 2);
-      }
-      ctx.stroke();
+      ctx.moveTo(beamX - w * 0.018, 0);
+      ctx.lineTo(beamX - w * 0.22, h * 0.8);
+      ctx.lineTo(beamX + w * 0.22, h * 0.8);
+      ctx.lineTo(beamX + w * 0.018, 0);
+      ctx.closePath();
+      ctx.fill();
     };
+
+    /* ───────────────────────── Icon Sprites ───────────────────────── */
+
+    const makeSprite = (kind: IconKind) => {
+      const s = 80; // sprite resolution
+      const c = document.createElement("canvas");
+      c.width = s;
+      c.height = s;
+      const g = c.getContext("2d");
+      if (!g) return null;
+
+      g.translate(s / 2, s / 2);
+      g.strokeStyle = "rgba(212,168,83,0.95)";
+      g.lineWidth = 2;
+      g.lineCap = "round";
+      g.lineJoin = "round";
+
+      const size = 26;
+
+      const rr = (x: number, y: number, w: number, h: number, r: number) => {
+        g.beginPath();
+        // @ts-ignore
+        g.roundRect(x, y, w, h, r);
+        g.stroke();
+      };
+
+      if (kind === "camera") {
+        rr(-size * 0.9, -size * 0.45, size * 1.8, size * 0.9, 8);
+        rr(-size * 0.55, -size * 0.75, size * 0.6, size * 0.3, 6);
+        g.beginPath();
+        g.arc(0, 0, size * 0.24, 0, Math.PI * 2);
+        g.stroke();
+      } else if (kind === "clapper") {
+        rr(-size * 0.9, -size * 0.25, size * 1.8, size * 0.9, 8);
+        rr(-size * 0.9, -size * 0.75, size * 1.8, size * 0.45, 8);
+      } else if (kind === "reel") {
+        g.beginPath();
+        g.arc(0, 0, size * 0.55, 0, Math.PI * 2);
+        g.stroke();
+        g.beginPath();
+        g.arc(0, 0, size * 0.2, 0, Math.PI * 2);
+        g.stroke();
+      } else if (kind === "tape") {
+        rr(-size, -size * 0.35, size * 2, size * 0.7, 10);
+        for (let i = 0; i < 5; i++) {
+          const hx = -size * 0.65 + (i / 4) * (size * 1.3);
+          g.beginPath();
+          g.arc(hx, 0, 2.6, 0, Math.PI * 2);
+          g.stroke();
+        }
+      } else {
+        g.beginPath();
+        g.moveTo(-size * 0.2, -size * 0.35);
+        g.lineTo(size * 0.5, 0);
+        g.lineTo(-size * 0.2, size * 0.35);
+        g.closePath();
+        g.stroke();
+      }
+
+      return c;
+    };
+
+    // build sprites once
+    spriteRef.current.camera = makeSprite("camera");
+    spriteRef.current.clapper = makeSprite("clapper");
+    spriteRef.current.reel = makeSprite("reel");
+    spriteRef.current.tape = makeSprite("tape");
+    spriteRef.current.play = makeSprite("play");
 
     /* ───────────────────────── Particles ───────────────────────── */
 
@@ -205,67 +244,109 @@ export default function AnimatedBackground() {
     const spawnParticle = (t: number): Particle => ({
       x: Math.random(),
       y: Math.random() * 1.15,
-      s: rand(12, 30),
-      a: rand(0.06, 0.16),
-      vx: rand(-0.0006, 0.0006),
-      vy: rand(-0.0012, -0.0004),
+      s: rand(12, 26),
+      a: rand(0.05, 0.12),
+
+      // slower than your laggy version
+      vx: rand(-0.00045, 0.00045),
+      vy: rand(-0.00095, -0.00035),
+
       r: rand(0, Math.PI * 2),
-      vr: rand(-0.012, 0.012),
+      vr: rand(-0.010, 0.010),
       tw: rand(0, Math.PI * 2),
-      sp: rand(1.4, 2.8),
+      sp: rand(1.1, 2.0),
       kind: pick(kinds),
-      bobAmp: rand(14, 34),
-      bobSp: rand(1.4, 3.2),
+
+      bobAmp: rand(10, 22),
+      bobSp: rand(1.1, 2.2),
       bobPh: rand(0, Math.PI * 2),
+
       born: t,
-      life: rand(3.2, 5.5),
+      life: rand(3.0, 5.2),
     });
 
-    for (let i = 0; i < BASE_COUNT; i++) particles.push(spawnParticle(i * 0.02));
+    for (let i = 0; i < BASE_COUNT; i++) particles.push(spawnParticle(i * 0.03));
 
     let lastBurst = 0;
     let t = 0;
 
-    const draw = () => {
+    /* ───────────────────────── FPS Throttle ───────────────────────── */
+    let lastFrameTime = 0;
+
+    const draw = (now: number) => {
+      rafRef.current = requestAnimationFrame(draw);
+
       if (prefersReducedMotion) return;
 
-      t += 0.01 * TIME_SPEED;
+      if (now - lastFrameTime < FRAME_MS) return;
+      lastFrameTime = now;
+
+      t += 0.010 * TIME_SPEED;
+
       const w = window.innerWidth;
       const h = window.innerHeight;
 
       ctx.clearRect(0, 0, w, h);
 
+      // backlights
       drawSpotlights(w, h, t);
       drawProjectorBeam(w, h, t);
 
+      // particles
       ctx.globalCompositeOperation = "screen";
+
+      // (optional glow, expensive)
+      if (ENABLE_SHADOWS) {
+        ctx.shadowColor = "rgba(212,168,83,0.55)";
+        ctx.shadowBlur = 10;
+      } else {
+        ctx.shadowBlur = 0;
+      }
+
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         const age = t - p.born;
 
-        const fade =
-          clamp01(age / 0.25) * clamp01((p.life - age) / 0.4);
+        const fade = clamp01(age / 0.22) * clamp01((p.life - age) / 0.38);
 
         p.x += p.vx;
         p.y += p.vy;
         p.r += p.vr;
 
-        if (p.y < -0.2 || age > p.life) {
+        // recycle
+        if (age > p.life || p.y < -0.2) {
           particles.splice(i, 1);
           continue;
         }
 
         const bob = Math.sin(t * p.bobSp + p.bobPh) * p.bobAmp;
-        const pop = Math.sin(Math.min(1, age / 0.35) * Math.PI) ** 2 * 28;
+        const pop = Math.sin(Math.min(1, age / 0.30) * Math.PI) ** 2 * 18;
+
+        const px = p.x * w;
+        const py = p.y * h + bob - pop;
+
+        const tw = 0.55 + 0.45 * Math.sin(p.tw + t * (1.4 + p.sp));
+        const alpha = p.a * fade * tw;
+
+        const sprite = spriteRef.current[p.kind];
+        if (!sprite) continue;
 
         ctx.save();
-        ctx.translate(p.x * w, p.y * h + bob - pop);
+        ctx.translate(px, py);
         ctx.rotate(p.r);
-        withIconStyle(p.a * fade);
-        drawIcon(p.kind, p.s);
+
+        // no path drawing; just blit sprite
+        ctx.globalAlpha = alpha;
+
+        const scale = (p.s / 22) * (0.92 + 0.10 * Math.sin(t * 1.2 + p.tw));
+        ctx.scale(scale, scale);
+
+        ctx.drawImage(sprite, -sprite.width / 2, -sprite.height / 2);
+
         ctx.restore();
       }
 
+      ctx.globalAlpha = 1;
       ctx.globalCompositeOperation = "source-over";
 
       while (particles.length < MIN_COUNT) particles.push(spawnParticle(t));
@@ -276,11 +357,9 @@ export default function AnimatedBackground() {
       }
 
       drawVignette(w, h);
-
-      rafRef.current = requestAnimationFrame(draw);
     };
 
-    draw();
+    rafRef.current = requestAnimationFrame(draw);
 
     return () => {
       cancelAnimationFrame(rafRef.current);
