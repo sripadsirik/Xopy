@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { Equipment, AlertEvent, SimulationControls, SensorReading, PurchaseDecision } from '../types';
 import { createInitialEquipment } from '../data/equipment';
-import { getRiskLevel } from '../engine/riskEngine';
+import { calculateRisk, getRiskLevel } from '../engine/riskEngine';
 import toast from 'react-hot-toast';
 
 const DEFAULT_WS_URL = 'ws://127.0.0.1:8000/ws/live';
@@ -79,7 +79,7 @@ function toPurchaseDecision(ev: BackendEvent): PurchaseDecision {
 
 export function useLiveFeed(wsUrl: string = DEFAULT_WS_URL) {
   const [equipment, setEquipment] = useState<Equipment[]>(() => createInitialEquipment());
-  const [selectedId, setSelectedId] = useState<string>('M-01');
+  const [selectedId, setSelectedId] = useState<string>('MCH-S-01');
   const [alerts, setAlerts] = useState<AlertEvent[]>([]);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -119,26 +119,17 @@ export function useLiveFeed(wsUrl: string = DEFAULT_WS_URL) {
     const failureMode = FAILURE_LABEL[ev.prediction.failure_type] ?? ev.prediction.failure_type;
 
     setEquipment((prev) => {
-      const idx = idToIndexRef.current[id];
+      let idx = idToIndexRef.current[id];
 
+      // Unknown backend ID → map to an existing machine by hashing the ID
       if (idx === undefined) {
-        const base = createInitialEquipment()[0];
-        const newEq: Equipment = {
-          ...base,
-          id,
-          name: `Equipment ${id}`,
-          type: mapMachineClassToEquipmentType(ev.telemetry.type),
-          sensorData: [...base.sensorData.slice(-(SENSOR_HISTORY - 1)), newSensor],
-          riskPercent,
-          riskLevel,
-          failureMode,
-          decision,
-        };
-
-        idToIndexRef.current = { ...idToIndexRef.current, [id]: 0 };
-        prevRiskLevels.current = { ...prevRiskLevels.current, [id]: riskLevel };
-
-        return [newEq, ...prev];
+        if (prev.length === 0) return prev;
+        // Stable hash: sum char codes, mod by equipment count
+        let hash = 0;
+        for (let i = 0; i < id.length; i++) hash += id.charCodeAt(i);
+        idx = hash % prev.length;
+        // Cache so subsequent events for this ID hit the same machine
+        idToIndexRef.current = { ...idToIndexRef.current, [id]: idx };
       }
 
       const next = prev.slice();
@@ -233,10 +224,35 @@ export function useLiveFeed(wsUrl: string = DEFAULT_WS_URL) {
     setControls(newControls);
   }, []);
 
-  const selectedEquipment = equipment.find((eq) => eq.id === selectedId) || equipment[0];
+  // Apply what-if control offsets to recalculate risk
+  const adjustedEquipment = useMemo(() => {
+    const hasOffset =
+      controls.runtimeHours !== 0 ||
+      controls.heat !== 0 ||
+      controls.dust !== 0 ||
+      controls.moisture !== 0 ||
+      controls.pastFailures !== 0;
+
+    if (!hasOffset) return equipment;
+
+    return equipment.map((eq) => {
+      const adjRuntime = Math.max(0, eq.runtimeHours + controls.runtimeHours);
+      const adjHeat = Math.max(0, eq.environmentSeverity.heat + controls.heat);
+      const adjDust = Math.max(0, eq.environmentSeverity.dust + controls.dust);
+      const adjMoisture = Math.max(0, eq.environmentSeverity.moisture + controls.moisture);
+      const adjFailures = Math.max(0, eq.pastFailures + controls.pastFailures);
+
+      const riskPercent = Math.round(calculateRisk(eq.type, adjRuntime, adjHeat, adjDust, adjMoisture, adjFailures) * 10) / 10;
+      const riskLevel = getRiskLevel(riskPercent);
+
+      return { ...eq, riskPercent, riskLevel };
+    });
+  }, [equipment, controls]);
+
+  const selectedEquipment = adjustedEquipment.find((eq) => eq.id === selectedId) || adjustedEquipment[0];
 
   return {
-    equipment,
+    equipment: adjustedEquipment,
     selectedEquipment,
     selectedId,
     setSelectedId,

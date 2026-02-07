@@ -59,7 +59,7 @@ export function getStatusFromUsage(usage: number): SimMachineStatus {
 
 /* ── Tick logic ─────────────────────────────────────── */
 
-export function advanceMachine(machine: SimMachine, days: number): SimMachine {
+export function advanceMachine(machine: SimMachine, days: number, wearMultiplier = 1): SimMachine {
   if (machine.status === 'Failed') {
     return { ...machine, downtimeHours: machine.downtimeHours + days * 24 };
   }
@@ -69,15 +69,15 @@ export function advanceMachine(machine: SimMachine, days: number): SimMachine {
 
   const rate = WEAR_RATES[machine.type];
   const jitter = 0.7 + Math.random() * 0.6;
-  const wear = rate * days * jitter;
+  const wear = rate * days * jitter * Math.max(0, wearMultiplier);
   const newUsage = Math.min(machine.usagePercent + wear, 100);
   const newStatus = getStatusFromUsage(newUsage);
 
   return { ...machine, usagePercent: newUsage, lastStatus: machine.status, status: newStatus };
 }
 
-export function advanceAllMachines(machines: SimMachine[], days: number): SimMachine[] {
-  return machines.map((m) => advanceMachine(m, days));
+export function advanceAllMachines(machines: SimMachine[], days: number, wearMultiplier = 1): SimMachine[] {
+  return machines.map((m) => advanceMachine(m, days, wearMultiplier));
 }
 
 /* ── User actions ───────────────────────────────────── */

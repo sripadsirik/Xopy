@@ -18,14 +18,16 @@ export interface SimMachine {
 
 export function createSimMachines(): SimMachine[] {
   const SEEDS: Array<Pick<SimMachine, 'id' | 'name' | 'type'>> = [
-    { id: 'S-01', name: 'Main Motor',    type: 'motor' },
-    { id: 'S-02', name: 'Water Pump',    type: 'pump' },
-    { id: 'S-03', name: 'Air Cooler',    type: 'hvac' },
-    { id: 'S-04', name: 'Conveyor Belt', type: 'conveyor' },
-    { id: 'S-05', name: 'Backup Motor',  type: 'motor' },
-    { id: 'S-06', name: 'Oil Pump',      type: 'pump' },
-    { id: 'S-07', name: 'Roof Cooler',   type: 'hvac' },
-    { id: 'S-08', name: 'Package Mover', type: 'conveyor' },
+    { id: 'S-01', name: 'Main Drive Motor A',     type: 'motor' },
+    { id: 'S-02', name: 'Coolant Pump P-12',      type: 'pump' },
+    { id: 'S-03', name: 'HVAC Unit - Zone 3',     type: 'hvac' },
+    { id: 'S-04', name: 'Assembly Conveyor C-1',  type: 'conveyor' },
+    { id: 'S-05', name: 'Aux Motor B-7',          type: 'motor' },
+    { id: 'S-06', name: 'Hydraulic Pump HP-3',    type: 'pump' },
+    { id: 'S-07', name: 'Rooftop HVAC-R1',        type: 'hvac' },
+    { id: 'S-08', name: 'Packaging Line Conv-2',  type: 'conveyor' },
+    { id: 'S-09', name: 'Compressor Unit 9',      type: 'motor' },
+    { id: 'S-10', name: 'Ventilation Fan F-10',   type: 'hvac' },
   ];
 
   return SEEDS.map((s) => ({

@@ -68,7 +68,8 @@ export default function ControlPanel({ controls, onChange }: Props) {
                   value={controls[s.key]}
                   onChange={(e) => handleChange(s.key, Number(e.target.value))}
                   aria-label={`${s.label}: ${controls[s.key]}${s.unit}`}
-                  className="w-full h-1.5 mt-[-6px] relative z-10 opacity-0 cursor-pointer"
+                  className="whatif-slider w-full h-1.5 mt-[-6px] relative z-10 cursor-pointer"
+                  style={{ '--slider-color': s.color } as React.CSSProperties}
                 />
               </motion.div>
             );
