@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useSimulation } from '../hooks/useSimulation';
+import { useLiveFeed } from '../hooks/useLiveFeed';
 import AnimatedBackground from './AnimatedBackground';
 import Header from './Header';
 import EquipmentList from './EquipmentList';
@@ -19,7 +19,7 @@ export default function Dashboard() {
     setIsPaused,
     controls,
     applyControls,
-  } = useSimulation();
+  } = useLiveFeed();
 
   const criticalCount = equipment.filter((eq) => eq.riskLevel === 'critical').length;
 
