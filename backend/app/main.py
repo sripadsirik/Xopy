@@ -1,12 +1,15 @@
 from __future__ import annotations
-from fastapi import FastAPI
+import asyncio
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from .schemas import TelemetryIn, PredictResponse
 from .model_service import load_artifacts, predict
 from .decision import decide, make_substitutes
+from .ws_manager import WSManager
+from .simulator import TelemetrySimulator
 
-app = FastAPI(title="XOPY Backend", version="0.1.0")
+app = FastAPI(title="XOPY Backend", version="0.2.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -17,6 +20,22 @@ app.add_middleware(
 )
 
 ARTIFACTS = load_artifacts()
+WS = WSManager()
+SIM = TelemetrySimulator(
+    ARTIFACTS,
+    WS,
+    num_machines=15,
+    interval_sec=1.0,
+    oversample_failures=0.35,  # increase for more “red” moments in demo
+)
+
+@app.on_event("startup")
+async def _startup():
+    SIM.start()
+
+@app.get("/")
+def root():
+    return {"name": "XOPY Backend", "ok": True, "try": ["/docs", "/health", "/predict", "/ws/live"]}
 
 @app.get("/health")
 def health():
@@ -52,3 +71,19 @@ def predict_endpoint(payload: TelemetryIn):
             "substitutes": substitutes,
         },
     }
+
+@app.websocket("/ws/live")
+async def ws_live(websocket: WebSocket):
+    await WS.connect(websocket)
+    try:
+        while True:
+            # server pushes only; client doesn't need to send anything
+            await asyncio.sleep(60)
+    except WebSocketDisconnect:
+        await WS.disconnect(websocket)
+    except Exception:
+        await WS.disconnect(websocket)
+
+@app.get("/ws/status")
+async def ws_status():
+    return {"connections": await WS.count()}
