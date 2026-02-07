@@ -279,7 +279,7 @@ def write_manifest(specs: List[MachineSpec]) -> None:
 
   OUT_MANIFEST.parent.mkdir(parents=True, exist_ok=True)
   OUT_MANIFEST.write_text(json.dumps(manifest, indent=2))
-  print("✅ wrote manifest:", OUT_MANIFEST)
+  print(" wrote manifest:", OUT_MANIFEST)
 
 
 def main() -> None:
