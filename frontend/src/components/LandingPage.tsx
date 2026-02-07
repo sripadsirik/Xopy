@@ -1,12 +1,7 @@
-// src/components/LandingPage.tsx
 import { motion } from "framer-motion";
 import { ArrowRight, Play, Radar, Activity, ShieldAlert, PackageSearch, Timer } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import AnimatedBackground from "./AnimatedBackground";
-
-interface Props {
-  onEnter: () => void;
-  onSimulation: () => void;
-}
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
@@ -17,9 +12,12 @@ const fadeUp = {
   }),
 };
 
-export default function LandingPage({ onEnter, onSimulation }: Props) {
+export default function LandingPage() {
+  const navigate = useNavigate();
+
   return (
     <div className="relative h-screen w-full overflow-hidden bg-bg-primary">
+      {/* ✅ background ONLY here */}
       <AnimatedBackground />
 
       <div className="absolute inset-0 film-grain pointer-events-none" style={{ zIndex: 1 }} />
@@ -44,19 +42,15 @@ export default function LandingPage({ onEnter, onSimulation }: Props) {
                   <Radar size={18} className="text-accent-gold" />
                 </div>
                 <div className="leading-tight">
-                  <div className="text-[36px] font-bold tracking-[0.26em] uppercase">
-                    <span className="text-accent-gold">Xopy</span>
-                    <span className="text-text-primary ml-2">Ops</span>
+                  <div className="text-[36px] font-bold tracking-[0.26em]">
+                    <span className="text-accent-gold">XOPY</span>
+                    <span className="text-text-primary ml-2">ops</span>
                   </div>
                   <div className="text-[10px] text-text-muted uppercase tracking-[0.22em] mt-1">
                     Lights • Camera • Action
                   </div>
                 </div>
               </motion.div>
-
-              {/* <div className="hidden sm:block text-[10px] text-text-muted uppercase tracking-[0.22em]">
-                Predictive Maintenance for Grainger
-              </div> */}
             </div>
           </div>
 
@@ -126,7 +120,7 @@ export default function LandingPage({ onEnter, onSimulation }: Props) {
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={onEnter}
+                        onClick={() => navigate("/dashboard")}
                         className="cta-primary w-full"
                       >
                         <ArrowRight size={18} />
@@ -142,7 +136,7 @@ export default function LandingPage({ onEnter, onSimulation }: Props) {
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={onSimulation}
+                        onClick={() => navigate("/simulation")}
                         className="cta-secondary w-full"
                       >
                         <Play size={16} />
@@ -165,10 +159,7 @@ export default function LandingPage({ onEnter, onSimulation }: Props) {
                           <div className="ops-tile-sub">Failure probability next 24–72 hrs</div>
                         </div>
                       </button>
-                      <div
-                        className="tooltip-cinema tooltip-box"
-                        data-tip="Risk score updates continuously from the sensor stream. Green, Yellow, Red changes mid-demo."
-                      />
+                      <div className="tooltip-cinema tooltip-box" data-tip="Risk score updates continuously from the sensor stream." />
                     </div>
 
                     <div className="tooltip-wrap">
@@ -179,10 +170,7 @@ export default function LandingPage({ onEnter, onSimulation }: Props) {
                           <div className="ops-tile-sub">Streams + status indicators</div>
                         </div>
                       </button>
-                      <div
-                        className="tooltip-cinema tooltip-box"
-                        data-tip="Live monitoring view per asset. Runtime hours, environment, and recent anomalies in one place."
-                      />
+                      <div className="tooltip-cinema tooltip-box" data-tip="Live monitoring view per asset." />
                     </div>
 
                     <div className="tooltip-wrap">
@@ -193,10 +181,7 @@ export default function LandingPage({ onEnter, onSimulation }: Props) {
                           <div className="ops-tile-sub">Now vs wait marker</div>
                         </div>
                       </button>
-                      <div
-                        className="tooltip-cinema tooltip-box"
-                        data-tip="Turns risk into action. Buy now, buy substitute, or monitor only with clear reasoning."
-                      />
+                      <div className="tooltip-cinema tooltip-box" data-tip="Turns risk into action with clear reasoning." />
                     </div>
 
                     <div className="tooltip-wrap">
@@ -207,10 +192,7 @@ export default function LandingPage({ onEnter, onSimulation }: Props) {
                           <div className="ops-tile-sub">Right part, right time</div>
                         </div>
                       </button>
-                      <div
-                        className="tooltip-cinema tooltip-box"
-                        data-tip="Maps predicted failures to Grainger-style part categories and suggests substitutes by lead time."
-                      />
+                      <div className="tooltip-cinema tooltip-box" data-tip="Suggests categories + substitutes by lead time." />
                     </div>
                   </div>
                 </div>
