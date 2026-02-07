@@ -1,14 +1,4 @@
-// src/components/Header.tsx
-import { motion } from "framer-motion";
-import { Radar, Pause, Play } from "lucide-react";
-
-interface Props {
-  isPaused: boolean;
-  onTogglePause: () => void;
-  equipmentCount: number;
-  criticalCount: number;
-  attentionCount: number;
-}
+import { Pause, Play } from "lucide-react";
 
 export default function Header({
   isPaused,
@@ -16,79 +6,72 @@ export default function Header({
   equipmentCount,
   criticalCount,
   attentionCount,
-}: Props) {
-  const summaryText =
-    attentionCount === 0
-      ? "All Equipment Running Smoothly"
-      : `${attentionCount} Machine${attentionCount > 1 ? "s" : ""} Need${
-          attentionCount === 1 ? "s" : ""
-        } Attention Today`;
-
+}: {
+  isPaused: boolean;
+  onTogglePause: () => void;
+  equipmentCount: number;
+  criticalCount: number;
+  attentionCount: number;
+}) {
   return (
-    <header className="relative shrink-0 z-20 ops-header" role="banner">
-      <div className="relative flex items-center justify-between px-6 py-4">
-        <div className="flex-1" />
-
-        <div className="flex items-center gap-5">
-          {/* Brand */}
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl cinema-panel spotlight-gold">
-              <Radar size={18} className="text-accent-gold" />
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] text-text-muted uppercase tracking-[0.22em]">
-                Operations Theater
-              </p>
-              <h1 className="text-[16px] font-bold text-text-primary">Xopy</h1>
-            </div>
+    <header className="shrink-0 px-4 pt-3 pb-3">
+      <div className="cinema-panel rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
+        {/* Left: brand + title */}
+        <div className="min-w-0 flex items-center gap-3">
+          <div className="p-2 rounded-xl spotlight-gold bg-white/5 border border-white/10">
+            <span className="text-accent-gold text-[12px] font-bold tracking-wider">Xopy</span>
           </div>
-
-          {/* Status summary */}
-          <div className="hidden md:flex items-center gap-3">
-            <div className="ops-chip">
-              <span className="chip-dot bg-accent-green" />
-              <span className="text-[11px] text-text-secondary">{summaryText}</span>
-            </div>
-
-            {criticalCount > 0 && (
-              <div className="ops-chip danger">
-                <span className="chip-dot bg-accent-red" />
-                <span className="text-[11px] text-accent-red">
-                  {criticalCount} Critical
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Controls */}
-          <div className="flex items-center gap-3">
-            <div className="ops-chip" role="status" aria-live="polite">
-              <motion.div
-                animate={{ opacity: [1, 0.4, 1] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                className="w-2 h-2 rounded-full bg-accent-green status-dot-green"
-                aria-hidden="true"
-              />
-              <span className="text-[11px] text-text-secondary">
-                {equipmentCount} units
-              </span>
-            </div>
-
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={onTogglePause}
-              aria-label={isPaused ? "Resume monitoring" : "Pause monitoring"}
-              className={`ops-button ${isPaused ? "resume" : "pause"}`}
-            >
-              {isPaused ? <Play size={12} /> : <Pause size={12} />}
-              {isPaused ? "Resume" : "Pause"}
-            </motion.button>
+          <div className="min-w-0 leading-tight">
+            <div className="text-[12px] uppercase tracking-[0.18em] text-text-muted">Operations</div>
+            <div className="text-[14px] font-semibold text-text-primary truncate">Live Fleet Monitor</div>
           </div>
         </div>
-      </div>
 
-      <div className="theater-divider" />
+        {/* Middle: minimal metrics */}
+        <div className="hidden md:flex items-center gap-2">
+          <Pill label="Units" value={equipmentCount} />
+          <Pill label="Critical" value={criticalCount} danger />
+          <Pill label="Attention" value={attentionCount} warn />
+        </div>
+
+        {/* Right: one control */}
+        <button
+          onClick={onTogglePause}
+          className={`px-3 py-2 rounded-xl text-[11px] font-semibold uppercase tracking-wider border transition-all cursor-pointer flex items-center gap-2 ${
+            isPaused
+              ? "bg-accent-green/10 text-accent-green border-accent-green/25 hover:bg-accent-green/15"
+              : "bg-accent-red/10 text-accent-red border-accent-red/25 hover:bg-accent-red/15"
+          }`}
+        >
+          {isPaused ? <Play size={14} /> : <Pause size={14} />}
+          {isPaused ? "Resume" : "Pause"}
+        </button>
+      </div>
     </header>
+  );
+}
+
+function Pill({
+  label,
+  value,
+  danger,
+  warn,
+}: {
+  label: string;
+  value: number;
+  danger?: boolean;
+  warn?: boolean;
+}) {
+  const cls = danger
+    ? "bg-accent-red/10 text-accent-red border-accent-red/20"
+    : warn
+    ? "bg-accent-gold/10 text-accent-gold border-accent-gold/20"
+    : "bg-white/5 text-text-secondary border-white/10";
+
+  return (
+    <div className={`px-3 py-2 rounded-xl border ${cls} flex items-center gap-2`}>
+      <span className="text-[10px] uppercase tracking-wider opacity-80">{label}</span>
+      <span className="text-[12px] font-bold">{value}</span>
+    </div>
   );
 }
