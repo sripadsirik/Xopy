@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "dataset": "synthetic_fleet_6mo_daily_10_machines.csv",
+  "horizon_days": 14,
+  "features": {
+    "categorical": [
+      "machine_id",
+      "lifespan_class",
+      "Type"
+    ],
+    "notes": "Numeric daily aggregates + diff7 trends are computed in training/inference the same way."
+  },
+  "train_rows": 1162,
+  "test_rows": 498,
+  "machines_train": [
+    "FUT-L-01",
+    "MCH-L-01",
+    "MCH-L-02",
+    "MCH-M-01",
+    "MCH-M-03",
+    "MCH-M-04",
+    "MCH-S-02"
+  ],
+  "machines_test": [
+    "FUT-M-01",
+    "MCH-M-02",
+    "MCH-S-01"
+  ]
+}
