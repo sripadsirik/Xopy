@@ -1,10 +1,12 @@
 {
   "schema_version": "1.0",
-  "created_utc": "2026-02-07T17:44:16.691823Z",
-  "dataset_csv": "synthetic_fleet_10_machines.csv",
+  "created_utc": "2026-02-07T17:56:03.647779Z",
+  "dataset_csv": "synthetic_fleet_6mo_daily_10_machines.csv",
   "total_machines": 10,
-  "points_per_machine": 1000,
-  "total_rows": 10000,
+  "days": 180,
+  "readings_per_day": 8,
+  "rows_per_machine": 1440,
+  "total_rows": 14400,
   "distribution_machines": {
     "short": 2,
     "medium": 5,
@@ -20,11 +22,11 @@
       "is_future": false,
       "generation_params": {
         "wear_rate": 1.35,
-        "temp_drift": 0.02,
-        "torque_drift": 0.011,
-        "shock_prob": 0.03,
+        "temp_drift_per_day": 0.22,
+        "torque_drift_per_day": 0.12,
+        "shock_prob": 0.055,
         "shock_mag": 1.6,
-        "maintenance_prob": 0.0
+        "maintenance_prob_per_day": 0.0
       },
       "type_baseline": {
         "air_k": 300.0,
@@ -32,7 +34,9 @@
         "rpm": 1600.0,
         "torque": 55.0
       },
-      "points": 1000
+      "days": 180,
+      "readings_per_day": 8,
+      "rows_per_machine": 1440
     },
     {
       "machine_id": "MCH-S-02",
@@ -42,11 +46,11 @@
       "is_future": false,
       "generation_params": {
         "wear_rate": 1.35,
-        "temp_drift": 0.02,
-        "torque_drift": 0.011,
-        "shock_prob": 0.03,
+        "temp_drift_per_day": 0.22,
+        "torque_drift_per_day": 0.12,
+        "shock_prob": 0.055,
         "shock_mag": 1.6,
-        "maintenance_prob": 0.0
+        "maintenance_prob_per_day": 0.0
       },
       "type_baseline": {
         "air_k": 299.0,
@@ -54,7 +58,9 @@
         "rpm": 1500.0,
         "torque": 45.0
       },
-      "points": 1000
+      "days": 180,
+      "readings_per_day": 8,
+      "rows_per_machine": 1440
     },
     {
       "machine_id": "MCH-M-01",
@@ -64,11 +70,11 @@
       "is_future": false,
       "generation_params": {
         "wear_rate": 0.9,
-        "temp_drift": 0.013,
-        "torque_drift": 0.007,
-        "shock_prob": 0.02,
+        "temp_drift_per_day": 0.14,
+        "torque_drift_per_day": 0.08,
+        "shock_prob": 0.035,
         "shock_mag": 1.25,
-        "maintenance_prob": 0.001
+        "maintenance_prob_per_day": 0.004
       },
       "type_baseline": {
         "air_k": 299.0,
@@ -76,7 +82,9 @@
         "rpm": 1500.0,
         "torque": 45.0
       },
-      "points": 1000
+      "days": 180,
+      "readings_per_day": 8,
+      "rows_per_machine": 1440
     },
     {
       "machine_id": "MCH-M-02",
@@ -86,11 +94,11 @@
       "is_future": false,
       "generation_params": {
         "wear_rate": 0.9,
-        "temp_drift": 0.013,
-        "torque_drift": 0.007,
-        "shock_prob": 0.02,
+        "temp_drift_per_day": 0.14,
+        "torque_drift_per_day": 0.08,
+        "shock_prob": 0.035,
         "shock_mag": 1.25,
-        "maintenance_prob": 0.001
+        "maintenance_prob_per_day": 0.004
       },
       "type_baseline": {
         "air_k": 298.5,
@@ -98,7 +106,9 @@
         "rpm": 1400.0,
         "torque": 35.0
       },
-      "points": 1000
+      "days": 180,
+      "readings_per_day": 8,
+      "rows_per_machine": 1440
     },
     {
       "machine_id": "MCH-M-03",
@@ -108,11 +118,11 @@
       "is_future": false,
       "generation_params": {
         "wear_rate": 0.9,
-        "temp_drift": 0.013,
-        "torque_drift": 0.007,
-        "shock_prob": 0.02,
+        "temp_drift_per_day": 0.14,
+        "torque_drift_per_day": 0.08,
+        "shock_prob": 0.035,
         "shock_mag": 1.25,
-        "maintenance_prob": 0.001
+        "maintenance_prob_per_day": 0.004
       },
       "type_baseline": {
         "air_k": 300.0,
@@ -120,7 +130,9 @@
         "rpm": 1600.0,
         "torque": 55.0
       },
-      "points": 1000
+      "days": 180,
+      "readings_per_day": 8,
+      "rows_per_machine": 1440
     },
     {
       "machine_id": "MCH-M-04",
@@ -130,11 +142,11 @@
       "is_future": false,
       "generation_params": {
         "wear_rate": 0.9,
-        "temp_drift": 0.013,
-        "torque_drift": 0.007,
-        "shock_prob": 0.02,
+        "temp_drift_per_day": 0.14,
+        "torque_drift_per_day": 0.08,
+        "shock_prob": 0.035,
         "shock_mag": 1.25,
-        "maintenance_prob": 0.001
+        "maintenance_prob_per_day": 0.004
       },
       "type_baseline": {
         "air_k": 299.0,
@@ -142,7 +154,9 @@
         "rpm": 1500.0,
         "torque": 45.0
       },
-      "points": 1000
+      "days": 180,
+      "readings_per_day": 8,
+      "rows_per_machine": 1440
     },
     {
       "machine_id": "MCH-L-01",
@@ -152,11 +166,11 @@
       "is_future": false,
       "generation_params": {
         "wear_rate": 0.58,
-        "temp_drift": 0.008,
-        "torque_drift": 0.004,
-        "shock_prob": 0.012,
+        "temp_drift_per_day": 0.09,
+        "torque_drift_per_day": 0.05,
+        "shock_prob": 0.02,
         "shock_mag": 1.05,
-        "maintenance_prob": 0.002
+        "maintenance_prob_per_day": 0.008
       },
       "type_baseline": {
         "air_k": 298.5,
@@ -164,7 +178,9 @@
         "rpm": 1400.0,
         "torque": 35.0
       },
-      "points": 1000
+      "days": 180,
+      "readings_per_day": 8,
+      "rows_per_machine": 1440
     },
     {
       "machine_id": "MCH-L-02",
@@ -174,11 +190,11 @@
       "is_future": false,
       "generation_params": {
         "wear_rate": 0.58,
-        "temp_drift": 0.008,
-        "torque_drift": 0.004,
-        "shock_prob": 0.012,
+        "temp_drift_per_day": 0.09,
+        "torque_drift_per_day": 0.05,
+        "shock_prob": 0.02,
         "shock_mag": 1.05,
-        "maintenance_prob": 0.002
+        "maintenance_prob_per_day": 0.008
       },
       "type_baseline": {
         "air_k": 299.0,
@@ -186,7 +202,9 @@
         "rpm": 1500.0,
         "torque": 45.0
       },
-      "points": 1000
+      "days": 180,
+      "readings_per_day": 8,
+      "rows_per_machine": 1440
     },
     {
       "machine_id": "FUT-M-01",
@@ -196,11 +214,11 @@
       "is_future": true,
       "generation_params": {
         "wear_rate": 0.9,
-        "temp_drift": 0.013,
-        "torque_drift": 0.007,
-        "shock_prob": 0.02,
+        "temp_drift_per_day": 0.14,
+        "torque_drift_per_day": 0.08,
+        "shock_prob": 0.035,
         "shock_mag": 1.25,
-        "maintenance_prob": 0.001
+        "maintenance_prob_per_day": 0.004
       },
       "type_baseline": {
         "air_k": 299.0,
@@ -208,7 +226,9 @@
         "rpm": 1500.0,
         "torque": 45.0
       },
-      "points": 1000
+      "days": 180,
+      "readings_per_day": 8,
+      "rows_per_machine": 1440
     },
     {
       "machine_id": "FUT-L-01",
@@ -218,11 +238,11 @@
       "is_future": true,
       "generation_params": {
         "wear_rate": 0.58,
-        "temp_drift": 0.008,
-        "torque_drift": 0.004,
-        "shock_prob": 0.012,
+        "temp_drift_per_day": 0.09,
+        "torque_drift_per_day": 0.05,
+        "shock_prob": 0.02,
         "shock_mag": 1.05,
-        "maintenance_prob": 0.002
+        "maintenance_prob_per_day": 0.008
       },
       "type_baseline": {
         "air_k": 300.0,
@@ -230,7 +250,9 @@
         "rpm": 1600.0,
         "torque": 55.0
       },
-      "points": 1000
+      "days": 180,
+      "readings_per_day": 8,
+      "rows_per_machine": 1440
     }
   ]
 }
