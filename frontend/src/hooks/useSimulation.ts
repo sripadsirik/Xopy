@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Equipment, AlertEvent, SimulationControls, SensorReading } from '../types';
 import { createInitialEquipment } from '../data/equipment';
-import { calculateRisk, getRiskLevel } from '../engine/riskEngine';
+import { getRiskLevel } from '../engine/riskEngine';
 import toast from 'react-hot-toast';
 
 const TICK_INTERVAL = 2000;
@@ -18,95 +18,49 @@ export function useSimulation() {
     moisture: 0,
     pastFailures: 0,
   });
-  const prevRiskLevels = useRef<Record<string, string>>({});
 
-  useEffect(() => {
-    const levels: Record<string, string> = {};
-    equipment.forEach((eq) => { levels[eq.id] = eq.riskLevel; });
-    prevRiskLevels.current = levels;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const fetchMachineStatus = useCallback(async (id: string) => {
+    try {
+      const response = await fetch(`http://localhost:8000/status/${id}`);
+      if (!response.ok) throw new Error('Failed to fetch status');
+      const data = await response.json();
 
-  const tick = useCallback(() => {
-    setEquipment((prev) => {
-      const updated = prev.map((eq) => {
-        const tempDelta = (Math.random() - 0.48) * 2.5;
-        const vibDelta = (Math.random() - 0.48) * 0.4;
-        const presDelta = (Math.random() - 0.48) * 1.5;
+      const machineRisk = data.ml_prediction.risk_score * 100; // Convert 0-1 to 0-100
 
-        const lastSensor = eq.sensorData[eq.sensorData.length - 1];
+      setEquipment(prev => prev.map(eq => {
+        if (eq.id !== id) return eq;
+
+        // Append new sensor reading
         const newSensor: SensorReading = {
           timestamp: Date.now(),
-          temperature: Math.max(40, Math.min(120, lastSensor.temperature + tempDelta)),
-          vibration: Math.max(0.5, Math.min(12, lastSensor.vibration + vibDelta)),
-          pressure: Math.max(60, Math.min(140, lastSensor.pressure + presDelta)),
+          temperature: data.sensor_data.process_temperature, // Mapping Process Temp to "temperature"
+          vibration: data.sensor_data.rotational_speed / 100, // Scaling down RPM for visualization consistency
+          pressure: data.sensor_data.torque // Mapping Torque to "Pressure" roughly
         };
 
         const sensorData = [...eq.sensorData.slice(-49), newSensor];
 
-        const runtimeNoise = (Math.random() - 0.45) * 200;
-        const envNoise = {
-          heat: Math.max(0, Math.min(100, eq.environmentSeverity.heat + (Math.random() - 0.48) * 3)),
-          dust: Math.max(0, Math.min(100, eq.environmentSeverity.dust + (Math.random() - 0.48) * 2)),
-          moisture: Math.max(0, Math.min(100, eq.environmentSeverity.moisture + (Math.random() - 0.48) * 2)),
-        };
-
-        const effectiveRuntime = eq.runtimeHours + runtimeNoise;
-        const risk = calculateRisk(eq.type, effectiveRuntime, envNoise.heat, envNoise.dust, envNoise.moisture, eq.pastFailures);
-        const riskLevel = getRiskLevel(risk);
-
         return {
           ...eq,
           sensorData,
-          riskPercent: Math.round(risk * 10) / 10,
-          riskLevel,
-          environmentSeverity: envNoise,
+          riskPercent: Math.round(machineRisk * 10) / 10,
+          riskLevel: getRiskLevel(machineRisk),
+          // We could also update runtimeHours etc if the backend provided it
         };
-      });
+      }));
 
-      updated.forEach((eq) => {
-        const prevLevel = prevRiskLevels.current[eq.id];
-        if (prevLevel && prevLevel !== 'critical' && prevLevel !== 'high' && (eq.riskLevel === 'critical' || eq.riskLevel === 'high')) {
-          const alert: AlertEvent = {
-            id: `alert-${Date.now()}-${eq.id}`,
-            timestamp: Date.now(),
-            equipmentId: eq.id,
-            equipmentName: eq.name,
-            message: eq.riskLevel === 'critical'
-              ? `CRITICAL: ${eq.name} risk surged to ${eq.riskPercent}%`
-              : `WARNING: ${eq.name} entered high-risk zone at ${eq.riskPercent}%`,
-            severity: eq.riskLevel === 'critical' ? 'critical' : 'warning',
-          };
-          setAlerts((prev) => [alert, ...prev].slice(0, 50));
-
-          if (eq.riskLevel === 'critical') {
-            toast.error(`🚨 ${eq.name} — CRITICAL RISK ${eq.riskPercent}%`, { duration: 5000 });
-          } else {
-            toast(`⚠️ ${eq.name} — HIGH RISK ${eq.riskPercent}%`, { duration: 4000, icon: '⚠️' });
-          }
-        }
-
-        if (Math.random() < 0.02 && eq.riskPercent > 40) {
-          const spikeAlert: AlertEvent = {
-            id: `spike-${Date.now()}-${eq.id}`,
-            timestamp: Date.now(),
-            equipmentId: eq.id,
-            equipmentName: eq.name,
-            message: `Sensor anomaly detected on ${eq.name} — vibration spike`,
-            severity: 'warning',
-          };
-          setAlerts((prev) => [spikeAlert, ...prev].slice(0, 50));
-          toast(`📡 Sensor spike on ${eq.name}`, { duration: 3000 });
-        }
-      });
-
-      const newLevels: Record<string, string> = {};
-      updated.forEach((eq) => { newLevels[eq.id] = eq.riskLevel; });
-      prevRiskLevels.current = newLevels;
-
-      return updated;
-    });
+    } catch (error) {
+      // console.error("Error fetching machine status:", error); 
+      // Squelch errors for now to avoid console spam if backend is offline
+    }
   }, []);
+
+  const tick = useCallback(() => {
+    // Poll for ALL active equipment in our list to simulate the dashboard
+    equipment.forEach(eq => {
+      fetchMachineStatus(eq.id);
+    });
+  }, [equipment, fetchMachineStatus]);
 
   useEffect(() => {
     if (isPaused) return;
@@ -116,26 +70,10 @@ export function useSimulation() {
 
   const applyControls = useCallback((newControls: SimulationControls) => {
     setControls(newControls);
-    setEquipment((prev) =>
-      prev.map((eq) => {
-        if (eq.id !== selectedId) return eq;
-        const runtime = eq.runtimeHours + newControls.runtimeHours;
-        const heat = Math.max(0, Math.min(100, eq.environmentSeverity.heat + newControls.heat));
-        const dust = Math.max(0, Math.min(100, eq.environmentSeverity.dust + newControls.dust));
-        const moisture = Math.max(0, Math.min(100, eq.environmentSeverity.moisture + newControls.moisture));
-        const failures = eq.pastFailures + newControls.pastFailures;
-        const risk = calculateRisk(eq.type, runtime, heat, dust, moisture, failures);
-        return {
-          ...eq,
-          riskPercent: Math.round(risk * 10) / 10,
-          riskLevel: getRiskLevel(risk),
-          runtimeHours: runtime,
-          environmentSeverity: { heat, dust, moisture },
-          pastFailures: failures,
-        };
-      })
-    );
-  }, [selectedId]);
+    // In a real app, we would send these controls to the backend
+    // await fetch('http://localhost:8000/controls', { method: 'POST', body: JSON.stringify(newControls) });
+    toast("Controls applied (Simulation UI only)", { icon: '🎛️' });
+  }, []);
 
   const selectedEquipment = equipment.find((eq) => eq.id === selectedId) || equipment[0];
 
