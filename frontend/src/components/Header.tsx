@@ -19,7 +19,7 @@ export default function Header({
         {/* Left: brand + title */}
         <div className="min-w-0 flex items-center gap-3">
           <div className="p-2 rounded-xl spotlight-gold bg-white/5 border border-white/10">
-            <span className="text-accent-gold text-[12px] font-bold tracking-wider">Xopy</span>
+            <span className="text-accent-gold text-[12px] font-bold tracking-wider">XOPYops</span>
           </div>
           <div className="min-w-0 leading-tight">
             <div className="text-[12px] uppercase tracking-[0.18em] text-text-muted">Operations</div>
