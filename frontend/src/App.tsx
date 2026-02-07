@@ -1,10 +1,42 @@
+import { useState, useCallback } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
+import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
 
+type Screen = 'landing' | 'dashboard';
+
 export default function App() {
+  const [screen, setScreen] = useState<Screen>('landing');
+
+  const handleEnter = useCallback(() => setScreen('dashboard'), []);
+
   return (
     <>
-      <Dashboard />
+      <AnimatePresence mode="wait">
+        {screen === 'landing' ? (
+          <motion.div
+            key="landing"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 1.02 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="h-screen w-full"
+          >
+            <LandingPage onEnter={handleEnter} />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="dashboard"
+            initial={{ opacity: 0, clipPath: 'inset(0 50% 0 50%)' }}
+            animate={{ opacity: 1, clipPath: 'inset(0 0% 0 0%)' }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            className="h-screen w-full"
+          >
+            <Dashboard />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <Toaster
         position="top-right"
         toastOptions={{
