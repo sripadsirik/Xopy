@@ -5,6 +5,7 @@ import AnimatedBackground from "./AnimatedBackground";
 
 interface Props {
   onEnter: () => void;
+  onSimulation: () => void;
 }
 
 const fadeUp = {
@@ -16,7 +17,7 @@ const fadeUp = {
   }),
 };
 
-export default function LandingPage({ onEnter }: Props) {
+export default function LandingPage({ onEnter, onSimulation }: Props) {
   return (
     <div className="relative h-screen w-full overflow-hidden bg-bg-primary">
       <AnimatedBackground />
@@ -141,15 +142,15 @@ export default function LandingPage({ onEnter }: Props) {
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={onEnter}
+                        onClick={onSimulation}
                         className="cta-secondary w-full"
                       >
                         <Play size={16} />
-                        Start Sim
+                        Simulation
                       </motion.button>
                       <div
                         className="tooltip-cinema tooltip-box"
-                        data-tip="Start a guided demo with simulated sensor streams, failure spikes, and buy-now decisions."
+                        data-tip="Watch machines wear out over 6 months. Fix them or let them fail — see the consequences."
                       />
                     </div>
                   </div>

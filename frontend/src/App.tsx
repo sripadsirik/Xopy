@@ -3,13 +3,16 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
+import SimulationView from './components/SimulationView';
 
-type Screen = 'landing' | 'dashboard';
+type Screen = 'landing' | 'dashboard' | 'simulation';
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('landing');
 
   const handleEnter = useCallback(() => setScreen('dashboard'), []);
+  const handleSimulation = useCallback(() => setScreen('simulation'), []);
+  const handleBack = useCallback(() => setScreen('landing'), []);
 
   return (
     <>
@@ -22,7 +25,18 @@ export default function App() {
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             className="h-screen w-full"
           >
-            <LandingPage onEnter={handleEnter} />
+            <LandingPage onEnter={handleEnter} onSimulation={handleSimulation} />
+          </motion.div>
+        ) : screen === 'simulation' ? (
+          <motion.div
+            key="simulation"
+            initial={{ opacity: 0, clipPath: 'inset(0 50% 0 50%)' }}
+            animate={{ opacity: 1, clipPath: 'inset(0 0% 0 0%)' }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            className="h-screen w-full"
+          >
+            <SimulationView onBack={handleBack} />
           </motion.div>
         ) : (
           <motion.div
