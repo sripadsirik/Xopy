@@ -1,5 +1,5 @@
 // WidgetBoard.tsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { RotateCcw, PanelLeftClose } from "lucide-react";
 
 import type { Equipment, SimulationControls, AlertEvent } from "../types";
@@ -60,10 +60,6 @@ export default function WidgetBoard({
   // ✅ Shelf visibility: user can hide ONLY when shelf is empty.
   const [showShelf, setShowShelf] = useState<boolean>(true);
 
-  // ✅ Auto-reveal shelf whenever at least 1 widget is back on shelf
-  useEffect(() => {
-    if (shelf.length > 0) setShowShelf(true);
-  }, [shelf.length]);
 
   const resetLayout = () => {
     setPlaced({});
@@ -200,23 +196,19 @@ export default function WidgetBoard({
     window.addEventListener("pointerup", onUp);
   };
 
-  const canHideShelf = shelf.length === 0;
-
   return (
     <div className="flex-1 min-h-0 flex flex-col gap-4">
       <div className="flex justify-between items-center">
         <div className="text-[12px] opacity-70">Widgets</div>
         <div className="flex items-center gap-2">
-          {canHideShelf ? (
-            <button
-              onClick={() => setShowShelf((s) => !s)}
-              className="cinema-panel rounded-xl px-3 py-2 text-[11px] font-semibold flex items-center gap-2 hover:opacity-90"
-              title={showShelf ? "Hide shelf" : "Show shelf"}
-            >
-              <PanelLeftClose size={14} />
-              {showShelf ? "Hide Shelf" : "Show Shelf"}
-            </button>
-          ) : null}
+          <button
+            onClick={() => setShowShelf((s) => !s)}
+            className="cinema-panel rounded-xl px-3 py-2 text-[11px] font-semibold flex items-center gap-2 hover:opacity-90"
+            title={showShelf ? "Hide shelf" : "Show shelf"}
+          >
+            <PanelLeftClose size={14} />
+            {showShelf ? "Hide Shelf" : "Open Shelf"}
+          </button>
 
           <button
             onClick={resetLayout}
@@ -229,7 +221,7 @@ export default function WidgetBoard({
       </div>
 
       <div className="flex gap-4 min-h-0 flex-1">
-        {/* SHELF (resizable, can hide only when empty) */}
+        {/* SHELF (resizable, user-toggled) */}
         {showShelf ? (
           <div
             className="cinema-panel rounded-2xl shrink-0 overflow-hidden relative"
@@ -242,7 +234,7 @@ export default function WidgetBoard({
             <div className="p-3 flex flex-col gap-2">
               {shelf.length === 0 ? (
                 <div className="text-[11px] opacity-50">
-                  Shelf is empty. You can hide it.
+                  All widgets placed on board.
                 </div>
               ) : (
                 shelf.map((id) => (
@@ -296,61 +288,81 @@ export default function WidgetBoard({
           {placedEntries.map(({ id, rect }) => (
             <div
               key={id}
-              className="absolute rounded-2xl overflow-hidden"
-              style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
+              style={{
+                position: "absolute",
+                left: rect.x,
+                top: rect.y,
+                width: rect.w,
+                height: rect.h,
+              }}
             >
-              {/* widget header */}
+              {/* Clipped content area */}
               <div
-                className="h-8 px-3 flex items-center justify-between select-none"
                 style={{
-                  background: "rgba(255,255,255,0.03)",
-                  borderBottom: "1px solid rgba(255,255,255,0.08)",
+                  position: "absolute",
+                  inset: 0,
+                  borderRadius: 16,
+                  overflow: "hidden",
                 }}
               >
-                {/* ✅ drag handle ONLY (so buttons always work) */}
+                {/* widget header */}
                 <div
-                  onPointerDown={(e) => startMoveWidget(id, e)}
-                  className="flex-1 h-full flex items-center"
-                  style={{ cursor: "grab" }}
-                  title="Drag to move"
+                  className="h-8 px-3 flex items-center justify-between select-none"
+                  style={{
+                    background: "rgba(255,255,255,0.03)",
+                    borderBottom: "1px solid rgba(255,255,255,0.08)",
+                  }}
                 >
-                  <div className="text-[11px] font-semibold opacity-80 uppercase tracking-wide">
-                    {titleFor(id)}
+                  <div
+                    onPointerDown={(e) => startMoveWidget(id, e)}
+                    className="flex-1 h-full flex items-center"
+                    style={{ cursor: "grab" }}
+                    title="Drag to move"
+                  >
+                    <div className="text-[11px] font-semibold opacity-80 uppercase tracking-wide">
+                      {titleFor(id)}
+                    </div>
                   </div>
+
+                  <button
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      sendToShelf(id);
+                    }}
+                    className="text-[10px] opacity-70 hover:opacity-100 px-2 py-1 rounded-lg"
+                    style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
+                    title="Return to shelf"
+                  >
+                    to shelf
+                  </button>
                 </div>
 
-                {/* ✅ to shelf is now reliable */}
-                <button
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    sendToShelf(id);
-                  }}
-                  className="text-[10px] opacity-70 hover:opacity-100 px-2 py-1 rounded-lg"
-                  style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
-                  title="Return to shelf"
-                >
-                  to shelf
-                </button>
+                <div className="h-[calc(100%-32px)]">{renderWidget(id)}</div>
               </div>
 
-              <div className="h-[calc(100%-32px)]">{renderWidget(id)}</div>
-
-              {/* widget resize grip (drag to resize per pixel) */}
+              {/* Resize grip — child of widget, outside the overflow-hidden clip wrapper */}
               <div
                 onPointerDown={(e) => startResizeWidget(id, e)}
-                className="absolute bottom-2 right-2 z-10 w-5 h-5 cursor-nwse-resize rounded-md hover:opacity-100 opacity-90"
-                title="Drag to resize"
                 style={{
+                  position: "absolute",
+                  left: rect.w - 24,
+                  top: rect.h - 24,
+                  width: 20,
+                  height: 20,
+                  zIndex: 30,
+                  cursor: "nwse-resize",
+                  borderRadius: 3,
                   background:
-                    "linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.14))",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  boxShadow: "0 0 0 1px rgba(0,0,0,0.35) inset",
+                    "linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.28))",
+                  border: "1px solid rgba(255,255,255,0.2)",
+                  boxShadow: "0 0 6px rgba(0,0,0,0.5)",
                 }}
+                title="Drag to resize"
               />
             </div>
           ))}

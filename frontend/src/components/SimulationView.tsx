@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import SectionHeader from './SectionHeader';
+import ControlPanel from './ControlPanel';
+import type { SimulationControls } from '../types';
 import type { SimMachine, SimMachineStatus, SimEquipmentType } from '../data/simEquipment';
 import { createSimMachines } from '../data/simEquipment';
 import {
@@ -86,9 +88,15 @@ export default function SimulationView() {
     return h;
   });
 
+  const [controls, setControls] = useState<SimulationControls>({
+    runtimeHours: 0, heat: 0, dust: 0, moisture: 0, pastFailures: 0,
+  });
+
   const tickRef = useRef<number | null>(null);
   const dayRef = useRef(day);
   dayRef.current = day;
+  const controlsRef = useRef(controls);
+  controlsRef.current = controls;
 
   /* tick loop */
   useEffect(() => {
@@ -102,7 +110,13 @@ export default function SimulationView() {
       dayRef.current = newDay;
 
       setMachines((prev) => {
-        const next = advanceAllMachines(prev, step);
+        const c = controlsRef.current;
+        const envFactor = 1 + (c.heat + c.dust + c.moisture) / 150;
+        const runtimeFactor = 1 + c.runtimeHours / 5000;
+        const failureFactor = 1 + c.pastFailures * 0.1;
+        const wearMultiplier = envFactor * runtimeFactor * failureFactor;
+
+        const next = advanceAllMachines(prev, step, wearMultiplier);
         setHistory((h) => {
           const u = { ...h };
           next.forEach((m) => { u[m.id] = [...(u[m.id] ?? []), { day: newDay, usage: Math.round(m.usagePercent) }]; });
@@ -510,6 +524,11 @@ export default function SimulationView() {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* What-If Controls */}
+            <div className="shrink-0 rounded-2xl overflow-hidden">
+              <ControlPanel controls={controls} onChange={setControls} />
             </div>
 
             {/* Bottom summary */}

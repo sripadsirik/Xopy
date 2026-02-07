@@ -17,14 +17,15 @@ export default function TopBarWidgets({
     <header className="px-4 pt-4 pb-3 flex items-center justify-between gap-4">
       <div className="flex items-center gap-3 min-w-0">
         <div className="p-2 rounded-xl cinema-panel spotlight-gold">
-          <span className="text-accent-gold text-[13px] font-bold">XR</span>
+          <span className="text-accent-gold text-[13px] font-bold">XO</span>
         </div>
         <div className="min-w-0">
           <p className="text-[10px] text-text-muted uppercase tracking-[0.18em]">
             Operations Theater
           </p>
-          <p className="text-[14px] font-bold text-text-primary truncate">
-            Xopy
+          <p className="text-[14px] font-bold truncate">
+            <span className="text-accent-gold">XOPY</span>
+            <span className="text-text-primary">ops</span>
           </p>
         </div>
       </div>

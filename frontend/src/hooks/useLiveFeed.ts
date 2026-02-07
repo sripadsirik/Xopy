@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { Equipment, AlertEvent, SimulationControls, SensorReading, PurchaseDecision } from '../types';
 import { createInitialEquipment } from '../data/equipment';
-import { getRiskLevel } from '../engine/riskEngine';
+import { calculateRisk, getRiskLevel } from '../engine/riskEngine';
 import toast from 'react-hot-toast';
 
 const DEFAULT_WS_URL = 'ws://127.0.0.1:8000/ws/live';
@@ -233,10 +233,35 @@ export function useLiveFeed(wsUrl: string = DEFAULT_WS_URL) {
     setControls(newControls);
   }, []);
 
-  const selectedEquipment = equipment.find((eq) => eq.id === selectedId) || equipment[0];
+  // Apply what-if control offsets to recalculate risk
+  const adjustedEquipment = useMemo(() => {
+    const hasOffset =
+      controls.runtimeHours !== 0 ||
+      controls.heat !== 0 ||
+      controls.dust !== 0 ||
+      controls.moisture !== 0 ||
+      controls.pastFailures !== 0;
+
+    if (!hasOffset) return equipment;
+
+    return equipment.map((eq) => {
+      const adjRuntime = Math.max(0, eq.runtimeHours + controls.runtimeHours);
+      const adjHeat = Math.max(0, eq.environmentSeverity.heat + controls.heat);
+      const adjDust = Math.max(0, eq.environmentSeverity.dust + controls.dust);
+      const adjMoisture = Math.max(0, eq.environmentSeverity.moisture + controls.moisture);
+      const adjFailures = Math.max(0, eq.pastFailures + controls.pastFailures);
+
+      const riskPercent = Math.round(calculateRisk(eq.type, adjRuntime, adjHeat, adjDust, adjMoisture, adjFailures) * 10) / 10;
+      const riskLevel = getRiskLevel(riskPercent);
+
+      return { ...eq, riskPercent, riskLevel };
+    });
+  }, [equipment, controls]);
+
+  const selectedEquipment = adjustedEquipment.find((eq) => eq.id === selectedId) || adjustedEquipment[0];
 
   return {
-    equipment,
+    equipment: adjustedEquipment,
     selectedEquipment,
     selectedId,
     setSelectedId,

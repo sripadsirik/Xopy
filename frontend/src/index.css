@@ -477,6 +477,53 @@ body {
   border-radius: 4px;
 }
 
+/* ── What-If Sliders ─────────────── */
+.whatif-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+.whatif-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  background: transparent;
+  border-radius: 3px;
+}
+.whatif-slider::-moz-range-track {
+  height: 6px;
+  background: transparent;
+  border-radius: 3px;
+}
+.whatif-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--slider-color, #d4a853);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  margin-top: -4px;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--slider-color, #d4a853) 50%, transparent);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.whatif-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--slider-color, #d4a853);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--slider-color, #d4a853) 50%, transparent);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.whatif-slider:hover::-webkit-slider-thumb {
+  transform: scale(1.2);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--slider-color, #d4a853) 70%, transparent);
+}
+.whatif-slider:hover::-moz-range-thumb {
+  transform: scale(1.2);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--slider-color, #d4a853) 70%, transparent);
+}
+
 /* ── Reduced motion ───────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
