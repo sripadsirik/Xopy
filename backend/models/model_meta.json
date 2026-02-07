@@ -1,0 +1,27 @@
+{
+  "trained_at": "2026-02-07T08:30:27.855042Z",
+  "random_state": 42,
+  "test_size": 0.2,
+  "feature_columns": [
+    "Type",
+    "Air temperature [K]",
+    "Process temperature [K]",
+    "Rotational speed [rpm]",
+    "Torque [Nm]",
+    "Tool wear [min]",
+    "Temp delta [K]"
+  ],
+  "failure_type_labels": [
+    "TWF",
+    "HDF",
+    "PWF",
+    "OSF",
+    "RNF"
+  ],
+  "binary_threshold_default": 0.5,
+  "notes": [
+    "Binary model predicts Machine failure.",
+    "Type model predicts which failure type, trained only on failure rows.",
+    "Temp delta [K] = Process temperature - Air temperature is an engineered feature."
+  ]
+}
