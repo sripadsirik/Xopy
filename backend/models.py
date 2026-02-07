@@ -7,6 +7,8 @@ class SensorData(Base):
     id = Column(Integer, primary_key=True, index=True)
     machine_id = Column(String, index=True)
     type = Column(String) # L/M/H type for ML model
+    lifespan_class = Column(String)
+    day_index = Column(Integer, index=True)
     timestamp = Column(DateTime)
     air_temperature = Column(Float)
     process_temperature = Column(Float)

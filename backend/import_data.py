@@ -44,16 +44,15 @@ def import_csv_data(file_path):
 
             objects.append(SensorData(
                 machine_id=row['machine_id'],
-                type=row['Type'], # "type" field in DB
+                type=row['Type'], 
+                lifespan_class=row['lifespan_class'],
+                day_index=row['day_index'],
                 timestamp=timestamp,
                 air_temperature=row['Air temperature [K]'],
                 process_temperature=row['Process temperature [K]'],
                 rotational_speed=row['Rotational speed [rpm]'],
                 torque=row['Torque [Nm]'],
                 tool_wear=row['Tool wear [min]'],
-                # "target" column might not be in this synthetic set? 
-                # Looking at user provided file, I don't see "Machine failure" or "Target"
-                # If it's pure sensor data, we default to 0 (no failure known yet) unless column exists
                 target=row.get('Machine failure', 0) 
             ))
 
