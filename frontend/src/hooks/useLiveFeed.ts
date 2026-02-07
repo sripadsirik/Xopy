@@ -79,7 +79,7 @@ function toPurchaseDecision(ev: BackendEvent): PurchaseDecision {
 
 export function useLiveFeed(wsUrl: string = DEFAULT_WS_URL) {
   const [equipment, setEquipment] = useState<Equipment[]>(() => createInitialEquipment());
-  const [selectedId, setSelectedId] = useState<string>('M-01');
+  const [selectedId, setSelectedId] = useState<string>('MCH-S-01');
   const [alerts, setAlerts] = useState<AlertEvent[]>([]);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -119,26 +119,17 @@ export function useLiveFeed(wsUrl: string = DEFAULT_WS_URL) {
     const failureMode = FAILURE_LABEL[ev.prediction.failure_type] ?? ev.prediction.failure_type;
 
     setEquipment((prev) => {
-      const idx = idToIndexRef.current[id];
+      let idx = idToIndexRef.current[id];
 
+      // Unknown backend ID → map to an existing machine by hashing the ID
       if (idx === undefined) {
-        const base = createInitialEquipment()[0];
-        const newEq: Equipment = {
-          ...base,
-          id,
-          name: `Equipment ${id}`,
-          type: mapMachineClassToEquipmentType(ev.telemetry.type),
-          sensorData: [...base.sensorData.slice(-(SENSOR_HISTORY - 1)), newSensor],
-          riskPercent,
-          riskLevel,
-          failureMode,
-          decision,
-        };
-
-        idToIndexRef.current = { ...idToIndexRef.current, [id]: 0 };
-        prevRiskLevels.current = { ...prevRiskLevels.current, [id]: riskLevel };
-
-        return [newEq, ...prev];
+        if (prev.length === 0) return prev;
+        // Stable hash: sum char codes, mod by equipment count
+        let hash = 0;
+        for (let i = 0; i < id.length; i++) hash += id.charCodeAt(i);
+        idx = hash % prev.length;
+        // Cache so subsequent events for this ID hit the same machine
+        idToIndexRef.current = { ...idToIndexRef.current, [id]: idx };
       }
 
       const next = prev.slice();
