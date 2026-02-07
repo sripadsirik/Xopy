@@ -22,6 +22,7 @@ export default function Dashboard() {
   } = useLiveFeed();
 
   const criticalCount = equipment.filter((eq) => eq.riskLevel === 'critical').length;
+  const attentionCount = equipment.filter((eq) => eq.riskLevel === 'critical' || eq.riskLevel === 'high').length;
 
   return (
     <div className="h-screen flex flex-col relative overflow-hidden">
@@ -46,15 +47,16 @@ export default function Dashboard() {
           onTogglePause={() => setIsPaused((p) => !p)}
           equipmentCount={equipment.length}
           criticalCount={criticalCount}
+          attentionCount={attentionCount}
         />
 
-        <main className="flex-1 flex min-h-0 p-3 gap-3" style={{ marginTop: criticalCount > 0 ? '24px' : '0' }} role="main">
-          {/* Left Panel — Equipment Fleet */}
+        <main className="flex-1 flex min-h-0 p-3 gap-3" role="main">
+          {/* Left Panel — Equipment Cast List */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            className="w-[280px] shrink-0 cinema-panel rounded-2xl overflow-hidden"
+            className="w-[300px] shrink-0 cinema-panel rounded-2xl overflow-hidden"
           >
             <EquipmentList
               equipment={equipment}
@@ -63,7 +65,7 @@ export default function Dashboard() {
             />
           </motion.div>
 
-          {/* Center Panel — Risk Chart + Controls */}
+          {/* Center Panel — Main Screen + What-If Controls */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -76,12 +78,12 @@ export default function Dashboard() {
             <ControlPanel controls={controls} onChange={applyControls} />
           </motion.div>
 
-          {/* Right Panel — Purchase Engine + Alerts */}
+          {/* Right Panel — Buying Decision + Alerts */}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className="w-[300px] shrink-0 flex flex-col gap-3"
+            className="w-[320px] shrink-0 flex flex-col gap-3"
           >
             <div className="flex-1 cinema-panel rounded-2xl overflow-hidden min-h-0">
               <PurchaseEngine equipment={selectedEquipment} />
