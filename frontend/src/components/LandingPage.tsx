@@ -4,9 +4,10 @@ import AnimatedBackground from './AnimatedBackground';
 
 interface Props {
   onEnter: () => void;
+  onSimulation: () => void;
 }
 
-export default function LandingPage({ onEnter }: Props) {
+export default function LandingPage({ onEnter, onSimulation }: Props) {
   return (
     <div className="h-screen w-full relative overflow-hidden flex items-center justify-center">
       {/* Animated spotlight background */}
@@ -89,11 +90,11 @@ export default function LandingPage({ onEnter }: Props) {
           <motion.button
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.97 }}
-            onClick={onEnter}
+            onClick={onSimulation}
             className="cinema-panel cinema-panel-hover px-8 py-4 rounded-xl text-[15px] font-semibold text-text-secondary uppercase tracking-[0.12em] cursor-pointer flex items-center gap-3 border border-border-dim hover:text-text-primary transition-colors"
           >
             <Play size={16} />
-            Start Demo
+            Simulation
           </motion.button>
         </motion.div>
 

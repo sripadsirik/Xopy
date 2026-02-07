@@ -1,58 +1,54 @@
-import type { Equipment, EquipmentType } from '../types';
-import { calculateRisk, getRiskLevel, getFailureMode } from '../engine/riskEngine';
+// equipment.ts
+// Equipment model and initial state for the Simulation page ONLY
 
-interface EquipmentSeed {
+export type EquipmentType = "motor" | "pump" | "hvac" | "conveyor";
+
+export type MachineStatus =
+  | "Healthy"
+  | "Warning"
+  | "NeedsFix"
+  | "Failed";
+
+export interface Equipment {
   id: string;
   name: string;
   type: EquipmentType;
-  runtimeHours: number;
-  heat: number;
-  dust: number;
-  moisture: number;
-  pastFailures: number;
-  lastMaintenance: string;
+
+  // Simulation-controlled wear (0-100)
+  usagePercent: number;
+
+  // Current lifecycle state
+  status: MachineStatus;
+
+  // Downtime accumulated once failed
+  downtimeHours: number;
+
+  // Used to detect transitions for alerts
+  lastStatus: MachineStatus;
 }
 
-const EQUIPMENT_SEEDS: EquipmentSeed[] = [
-  { id: 'M-01', name: 'Main Drive Motor A', type: 'motor', runtimeHours: 4200, heat: 72, dust: 45, moisture: 30, pastFailures: 2, lastMaintenance: '2026-01-15' },
-  { id: 'M-02', name: 'Coolant Pump P-12', type: 'pump', runtimeHours: 3800, heat: 55, dust: 20, moisture: 80, pastFailures: 1, lastMaintenance: '2026-01-28' },
-  { id: 'M-03', name: 'HVAC Unit - Zone 3', type: 'hvac', runtimeHours: 8500, heat: 40, dust: 60, moisture: 50, pastFailures: 3, lastMaintenance: '2025-12-10' },
-  { id: 'M-04', name: 'Assembly Conveyor C-1', type: 'conveyor', runtimeHours: 6200, heat: 65, dust: 75, moisture: 25, pastFailures: 4, lastMaintenance: '2026-01-05' },
-  { id: 'M-05', name: 'Aux Motor B-7', type: 'motor', runtimeHours: 1200, heat: 30, dust: 15, moisture: 10, pastFailures: 0, lastMaintenance: '2026-02-01' },
-  { id: 'M-06', name: 'Hydraulic Pump HP-3', type: 'pump', runtimeHours: 5500, heat: 68, dust: 40, moisture: 55, pastFailures: 2, lastMaintenance: '2025-12-20' },
-  { id: 'M-07', name: 'Rooftop HVAC-R1', type: 'hvac', runtimeHours: 2800, heat: 35, dust: 25, moisture: 40, pastFailures: 0, lastMaintenance: '2026-01-20' },
-  { id: 'M-08', name: 'Packaging Line Conv-2', type: 'conveyor', runtimeHours: 7800, heat: 50, dust: 85, moisture: 30, pastFailures: 5, lastMaintenance: '2025-11-30' },
-];
-
+/**
+ * All machines start identical in the simulation:
+ * 0% usage, Healthy, no downtime.
+ * Differences emerge over simulated time.
+ */
 export function createInitialEquipment(): Equipment[] {
-  return EQUIPMENT_SEEDS.map((seed) => {
-    const risk = calculateRisk(seed.type, seed.runtimeHours, seed.heat, seed.dust, seed.moisture, seed.pastFailures);
-    return {
-      id: seed.id,
-      name: seed.name,
-      type: seed.type,
-      riskPercent: Math.round(risk * 10) / 10,
-      riskLevel: getRiskLevel(risk),
-      runtimeHours: seed.runtimeHours,
-      environmentSeverity: { heat: seed.heat, dust: seed.dust, moisture: seed.moisture },
-      pastFailures: seed.pastFailures,
-      sensorData: generateInitialSensorData(),
-      failureMode: getFailureMode(seed.type),
-      lastMaintenance: seed.lastMaintenance,
-    };
-  });
-}
+  const SEEDS: Array<Pick<Equipment, "id" | "name" | "type">> = [
+    { id: "M-01", name: "Main Motor",     type: "motor" },
+    { id: "M-02", name: "Water Pump",     type: "pump" },
+    { id: "M-03", name: "Air Cooler",     type: "hvac" },
+    { id: "M-04", name: "Conveyor Belt",  type: "conveyor" },
+    { id: "M-05", name: "Backup Motor",   type: "motor" },
+    { id: "M-06", name: "Oil Pump",       type: "pump" },
+    { id: "M-07", name: "Roof Cooler",    type: "hvac" },
+    { id: "M-08", name: "Package Mover",  type: "conveyor" },
+  ];
 
-function generateInitialSensorData() {
-  const now = Date.now();
-  const data = [];
-  for (let i = 30; i >= 0; i--) {
-    data.push({
-      timestamp: now - i * 2000,
-      temperature: 65 + Math.random() * 20,
-      vibration: 2 + Math.random() * 3,
-      pressure: 95 + Math.random() * 15,
-    });
-  }
-  return data;
+  return SEEDS.map((m) => ({
+    ...m,
+    usagePercent: 0,
+    status: "Healthy" as MachineStatus,
+    lastStatus: "Healthy" as MachineStatus,
+    downtimeHours: 0,
+  }));
 }
