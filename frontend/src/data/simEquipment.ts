@@ -28,6 +28,11 @@ export function createSimMachines(): SimMachine[] {
     { id: 'S-08', name: 'Packaging Line Conv-2',  type: 'conveyor' },
     { id: 'S-09', name: 'Compressor Unit 9',      type: 'motor' },
     { id: 'S-10', name: 'Ventilation Fan F-10',   type: 'hvac' },
+    { id: 'S-11', name: 'Feed Pump FP-4',         type: 'pump' },
+    { id: 'S-12', name: 'Sorting Conveyor C-3',   type: 'conveyor' },
+    { id: 'S-13', name: 'Exhaust Fan EF-2',       type: 'hvac' },
+    { id: 'S-14', name: 'Spindle Motor SM-1',     type: 'motor' },
+    { id: 'S-15', name: 'Chiller Unit CH-5',      type: 'hvac' },
   ];
 
   return SEEDS.map((s) => ({

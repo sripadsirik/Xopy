@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { Equipment, AlertEvent, SimulationControls, SensorReading, PurchaseDecision } from '../types';
 import { createInitialEquipment } from '../data/equipment';
-import { calculateRisk, getRiskLevel } from '../engine/riskEngine';
+import { calculateRisk, getRiskLevel, generateSubstitutes, getPartCategory } from '../engine/riskEngine';
 import toast from 'react-hot-toast';
 
 const DEFAULT_WS_URL = 'ws://127.0.0.1:8000/ws/live';
@@ -79,7 +79,7 @@ function toPurchaseDecision(ev: BackendEvent): PurchaseDecision {
 
 export function useLiveFeed(wsUrl: string = DEFAULT_WS_URL) {
   const [equipment, setEquipment] = useState<Equipment[]>(() => createInitialEquipment());
-  const [selectedId, setSelectedId] = useState<string>('MCH-S-01');
+  const [selectedId, setSelectedId] = useState<string>('M-01');
   const [alerts, setAlerts] = useState<AlertEvent[]>([]);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -245,9 +245,96 @@ export function useLiveFeed(wsUrl: string = DEFAULT_WS_URL) {
       const riskPercent = Math.round(calculateRisk(eq.type, adjRuntime, adjHeat, adjDust, adjMoisture, adjFailures) * 10) / 10;
       const riskLevel = getRiskLevel(riskPercent);
 
-      return { ...eq, riskPercent, riskLevel };
+      // Derive a purchase decision from the what-if adjusted risk
+      let decision: PurchaseDecision;
+      if (riskLevel === 'critical') {
+        const subs = generateSubstitutes(eq.type);
+        decision = {
+          action: 'BUY_NOW',
+          reason: `What-if scenario shows ${riskPercent}% failure risk. Order replacement parts immediately to prevent downtime.`,
+          recommendedCategories: [getPartCategory(eq.type)],
+          substitutes: subs.map((s) => ({
+            name: s.name,
+            category: getPartCategory(eq.type),
+            availability: s.availability >= 80 ? 'In Stock' : s.availability >= 50 ? 'Limited' : 'Backorder',
+            lead_time_days: s.leadTimeDays,
+            risk_reduction: s.riskReduction / 100,
+          })),
+        };
+      } else if (riskLevel === 'high') {
+        const subs = generateSubstitutes(eq.type);
+        decision = {
+          action: 'BUY_SUBSTITUTE',
+          reason: `What-if scenario shows ${riskPercent}% failure risk. Consider ordering substitutes while lead time allows.`,
+          recommendedCategories: [getPartCategory(eq.type)],
+          substitutes: subs.map((s) => ({
+            name: s.name,
+            category: getPartCategory(eq.type),
+            availability: s.availability >= 80 ? 'In Stock' : s.availability >= 50 ? 'Limited' : 'Backorder',
+            lead_time_days: s.leadTimeDays,
+            risk_reduction: s.riskReduction / 100,
+          })),
+        };
+      } else {
+        decision = eq.decision ?? {
+          action: 'MONITOR',
+          reason: `What-if scenario shows ${riskPercent}% failure risk. No immediate action required.`,
+          recommendedCategories: [],
+          substitutes: [],
+        };
+      }
+
+      return { ...eq, riskPercent, riskLevel, decision };
     });
   }, [equipment, controls]);
+
+  // --- Generate alerts when what-if controls push equipment into critical/high risk ---
+  const prevWhatIfLevels = useRef<Record<string, string>>({});
+
+  useEffect(() => {
+    const hasOffset =
+      controls.runtimeHours !== 0 ||
+      controls.heat !== 0 ||
+      controls.dust !== 0 ||
+      controls.moisture !== 0 ||
+      controls.pastFailures !== 0;
+
+    if (!hasOffset) {
+      // Reset tracked levels when controls go back to zero
+      prevWhatIfLevels.current = {};
+      return;
+    }
+
+    adjustedEquipment.forEach((eq) => {
+      const prev = prevWhatIfLevels.current[eq.id];
+      const curr = eq.riskLevel;
+
+      // Alert on transition into critical or high (but not if already at that level)
+      if (prev !== curr && (curr === 'critical' || curr === 'high')) {
+        const severity = curr === 'critical' ? 'critical' : 'warning';
+        const msg =
+          curr === 'critical'
+            ? `${eq.name} — what-if scenario pushed risk to ${eq.riskPercent}%. Immediate attention needed.`
+            : `${eq.name} — what-if scenario elevated risk to ${eq.riskPercent}%. Monitor closely.`;
+
+        const alert: AlertEvent = {
+          id: `alert-wif-${Date.now()}-${eq.id}`,
+          timestamp: Date.now(),
+          equipmentId: eq.id,
+          equipmentName: eq.name,
+          message: msg,
+          severity,
+        };
+
+        setAlerts((a) => [alert, ...a].slice(0, 50));
+
+        if (severity === 'critical') toast.error(msg, { duration: 5000 });
+        else toast(msg, { duration: 3500, icon: '\u26A0\uFE0F' });
+      }
+
+      prevWhatIfLevels.current[eq.id] = curr;
+    });
+  }, [adjustedEquipment, controls]);
 
   const selectedEquipment = adjustedEquipment.find((eq) => eq.id === selectedId) || adjustedEquipment[0];
 
