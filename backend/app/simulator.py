@@ -21,10 +21,19 @@ AI4I_COLS = {
 }
 
 def _data_path() -> str:
-    # backend/data/ai4i2020.csv
+    # Prefer the original AI4I dataset when present. Fall back to the checked-in
+    # synthetic fleet dataset so the app can run out of the box.
     here = os.path.dirname(os.path.abspath(__file__))
     backend_dir = os.path.dirname(here)
-    return os.path.join(backend_dir, "data", "ai4i2020.csv")
+    ai4i_path = os.path.join(backend_dir, "data", "ai4i2020.csv")
+    if os.path.exists(ai4i_path):
+        return ai4i_path
+
+    synthetic_path = os.path.join(backend_dir, "data", "synthetic_fleet_6mo_daily_10_machines.csv")
+    if os.path.exists(synthetic_path):
+        return synthetic_path
+
+    return ai4i_path
 
 class TelemetrySimulator:
     """
@@ -60,7 +69,9 @@ class TelemetrySimulator:
         path = _data_path()
         if not os.path.exists(path):
             raise FileNotFoundError(
-                f"Could not find AI4I dataset at {path}. Put it at backend/data/ai4i2020.csv"
+                "Could not find a telemetry dataset. Expected one of: "
+                "backend/data/ai4i2020.csv or "
+                "backend/data/synthetic_fleet_6mo_daily_10_machines.csv"
             )
         df = pd.read_csv(path)
         # Validate required cols
